@@ -10,7 +10,6 @@
     "@ria-develop/react-esm": "^1.0.5",
     "fake-tag": "^5.0.0",
     "koa": "^2.15.3",
-    "koa-single-page": "^19.0.0",
     "koa-static": "^5.0.0",
     "modulepreload-koa": "^2.1.0",
     "scoped-style-components": "^1.0.1"

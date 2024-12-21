@@ -3,10 +3,11 @@ import { readFile } from "fs/promises";
 import path from "path";
 import { WebSocketServer } from "ws";
 import chokidar from "chokidar";
-import serveStatic from "koa-static";
+import serve from "koa-static";
 import { parse } from "url";
 import spaMiddleware from "./lib/spaMiddleware.js";
 import * as config from "../config.js";
+import mount from "koa-mount";
 
 const APP_ROOT = path.resolve(config.APP_ROOT);
 const NODE_MODULES = path.resolve("./node_modules");
@@ -89,8 +90,10 @@ app.use(async (ctx, next) => {
   }
 });
 
-app.use(serveStatic(APP_ROOT));
-app.use(serveStatic(NODE_MODULES));
+app.use(mount(config.STATIC_PATH, serve(APP_ROOT)));
+app.use(
+  mount(config.STATIC_PATH + config.NODE_MODULES_PATH, serve(NODE_MODULES))
+);
 app.use(spaMiddleware);
 
 // WebSocket upgrade for live-reloading

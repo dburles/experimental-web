@@ -1,17 +1,24 @@
-import Koa from "koa";
-import serve from "koa-static";
-import createModulePreloadMiddleware from "modulepreload-koa/createModulePreloadMiddleware.mjs";
-import spaMiddleware from "./lib/spaMiddleware.js";
+// @ts-check
+
+import { serve } from "@hono/node-server";
+import { Hono } from "hono";
+
 import * as config from "../config.js";
-import mount from "koa-mount";
+// import { logger } from "hono/logger";
+import majesticApp from "./middleware/majesticApp.js";
+import majesticNpm from "./middleware/majesticNpm.js";
+import generateIndexHtml from "./lib/generateIndexHtml.js";
+import majesticPreload from "./middleware/majesticPreload.js";
 
-const app = new Koa();
+const app = new Hono();
 
-app.use(createModulePreloadMiddleware(config.APP_ROOT));
-app.use(serve(config.APP_ROOT));
-app.use(mount(config.NODE_MODULES_PATH, serve("./node_modules")));
-app.use(spaMiddleware);
+// app.use(logger());
 
-app.listen(config.PORT, () => {
-  console.log(`Server is running on http://localhost:${config.PORT}`);
+app.use("*", majesticPreload);
+app.use("/static/*", majesticApp);
+app.use("/static/npm/*", majesticNpm);
+app.use("*", async (c) => c.html(generateIndexHtml()));
+
+serve({ fetch: app.fetch, port: config.PORT }, (info) => {
+  console.log(`server listening on http://localhost:${info.port}`);
 });

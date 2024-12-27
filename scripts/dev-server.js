@@ -1,110 +1,66 @@
-import Koa from "koa";
-import { readFile } from "fs/promises";
-import path from "path";
+// @ts-check
+
+import { serve } from "@hono/node-server";
+import { Hono } from "hono";
+import * as config from "../config.js";
+// import { logger } from "hono/logger";
 import { WebSocketServer } from "ws";
 import chokidar from "chokidar";
-import serve from "koa-static";
-import { parse } from "url";
-import spaMiddleware from "./lib/spaMiddleware.js";
-import * as config from "../config.js";
-import mount from "koa-mount";
+import majesticApp from "./middleware/majesticApp.js";
+import majesticNpm from "./middleware/majesticNpm.js";
+import generateIndexHtml from "./lib/generateIndexHtml.js";
+import majesticPreload from "./middleware/majesticPreload.js";
 
-const APP_ROOT = path.resolve(config.APP_ROOT);
-const NODE_MODULES = path.resolve("./node_modules");
-const INDEX_HTML = path.join(APP_ROOT, config.INDEX_HTML);
-const CLIENT_SCRIPT = `
-  <script>
-    const ws = new WebSocket('ws://' + window.location.host);
-    ws.onmessage = function(event) {
-      if (event.data === 'reload') {
-        window.location.reload();
-      }
-    };
-  </script>
-`;
+const app = new Hono();
 
-// Create a new Koa app
-const app = new Koa();
-
-// WebSocket server setup for live reload
 const wss = new WebSocketServer({ noServer: true });
 
-// Variable to track if we’ve already added the `change` listener
-let fileChangeListenerAdded = false;
+// app.use(logger());
 
-// WebSocket client connection
-wss.on("connection", (ws) => {
-  console.log("New WebSocket connection");
-
-  // Add file change listener only once
-  if (!fileChangeListenerAdded) {
-    fileChangeListenerAdded = true;
-
-    // Send a reload message to clients when a file change occurs
-    watcher.on("change", () => {
-      ws.send("reload");
-    });
-  }
-
-  // Handle WebSocket disconnection
-  ws.on("close", () => {
-    console.log("WebSocket connection closed");
-
-    // If there are no more active WebSocket connections, we can remove the listener
-    if (wss.clients.size === 0) {
-      watcher.removeListener("change", () => {
-        ws.send("reload");
-      });
-      fileChangeListenerAdded = false;
-    }
-  });
+app.use("*", majesticPreload);
+app.use("/static/*", majesticApp);
+app.use("/static/npm/*", majesticNpm);
+app.get("/ws");
+app.use("*", async (c) => {
+  const html = await generateIndexHtml();
+  return c.html(
+    html.replace(
+      "</body>",
+      `
+      <script>
+        const ws = new WebSocket('ws://' + window.location.host);
+        ws.onmessage = event => {
+          if (event.data === 'reload') {
+            window.location.reload();
+          }
+        };
+      </script>
+      </body>
+      `
+    )
+  );
 });
 
-// File watcher with chokidar to trigger reload on file change
-const watcher = chokidar.watch(APP_ROOT, {
+const watcher = chokidar.watch("./app", {
   ignored: /^\./, // Ignore dotfiles
   persistent: true,
 });
 
-// Middleware to inject WebSocket script into index.html
-app.use(async (ctx, next) => {
-  const parsedUrl = parse(ctx.request.url, true);
-  let filePath = path.join(APP_ROOT, parsedUrl.pathname || "/");
+watcher.on("change", (file) => {
+  console.log(`${file} changed, reloading...`);
 
-  // Serve index.html with WebSocket client script injection
-  if (
-    filePath === path.join(APP_ROOT, "/") ||
-    filePath === path.join(APP_ROOT, "/index.html")
-  ) {
-    try {
-      let htmlContent = await readFile(INDEX_HTML, "utf8");
-      htmlContent = htmlContent.replace("</body>", `${CLIENT_SCRIPT}</body>`);
-      ctx.type = "html";
-      ctx.body = htmlContent;
-    } catch (err) {
-      ctx.status = 500;
-      ctx.body = "Error reading index.html";
+  wss.clients.forEach((client) => {
+    if (client.readyState === WebSocket.OPEN) {
+      client.send("reload");
     }
-  } else {
-    await next();
-  }
+  });
 });
 
-app.use(mount(config.STATIC_PATH, serve(APP_ROOT)));
-app.use(
-  mount(config.STATIC_PATH + config.NODE_MODULES_PATH, serve(NODE_MODULES))
-);
-app.use(spaMiddleware);
-
-// WebSocket upgrade for live-reloading
-app.server = app.listen(config.PORT_DEV, () => {
-  console.log(
-    `Development server is running on http://localhost:${config.PORT_DEV}`
-  );
+const server = serve({ fetch: app.fetch, port: config.PORT }, (info) => {
+  console.log(`development server listening on http://localhost:${info.port}`);
 });
 
-// Upgrade HTTP server to support WebSocket
-app.server.on("upgrade", (request, socket, head) => {
+server.on("upgrade", async (request, socket, head) => {
   wss.handleUpgrade(request, socket, head, (ws) => {
     wss.emit("connection", ws, request);
   });

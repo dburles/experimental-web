@@ -8,11 +8,9 @@
   },
   "dependencies": {
     "@hono/node-server": "^1.13.7",
-    "@ria-develop/react-esm": "^1.0.5",
-    "fake-tag": "^5.0.0",
     "hono": "^4.6.14",
-    "modulepreload-link-relations": "^3.1.0-beta.0",
-    "scoped-style-components": "^1.0.1"
+    "lit": "^3.2.1",
+    "modulepreload-link-relations": "^3.1.0-beta.0"
   },
   "scripts": {
     "start": "node scripts/server.js",

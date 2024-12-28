@@ -11,7 +11,7 @@
     "@ria-develop/react-esm": "^1.0.5",
     "fake-tag": "^5.0.0",
     "hono": "^4.6.14",
-    "modulepreload-link-relations": "^3.1.0-beta.0",
+    "modulepreload-link-relations": "^3.1.0",
     "scoped-style-components": "^1.0.1"
   },
   "scripts": {

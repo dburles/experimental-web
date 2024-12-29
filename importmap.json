@@ -4,8 +4,6 @@
     "lit-html": "/static/npm/lit-html/lit-html.js",
     "lit-html/": "/static/npm/lit-html/",
     "lit-element/": "/static/npm/lit-element/",
-    "@lit/reactive-element": "/static/npm/@lit/reactive-element/reactive-element.js",
-    "scoped-style-components/": "/static/npm/scoped-style-components/",
-    "fake-tag": "/static/npm/fake-tag/fakeTag.mjs"
+    "@lit/reactive-element": "/static/npm/@lit/reactive-element/reactive-element.js"
   }
 }

@@ -4,6 +4,7 @@
     "lit-html": "/static/npm/lit-html/lit-html.js",
     "lit-html/": "/static/npm/lit-html/",
     "lit-element/": "/static/npm/lit-element/",
-    "@lit/reactive-element": "/static/npm/@lit/reactive-element/reactive-element.js"
+    "@lit/reactive-element": "/static/npm/@lit/reactive-element/reactive-element.js",
+    "@lit-labs/router": "/static/npm/@lit-labs/router/index.js"
   }
 }

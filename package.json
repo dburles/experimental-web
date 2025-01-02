@@ -1,7 +1,7 @@
 {
   "type": "module",
   "devDependencies": {
-    "chokidar": "^4.0.3",
+    "@parcel/watcher": "^2.5.0",
     "prettier": "^3.4.2",
     "serve-static": "^1.16.2",
     "ws": "^8.18.0"

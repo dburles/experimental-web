@@ -5,7 +5,7 @@ import { Hono } from "hono";
 import * as config from "../config.js";
 // import { logger } from "hono/logger";
 import { WebSocketServer } from "ws";
-import chokidar from "chokidar";
+import ParcelWatcher from "@parcel/watcher";
 import majesticApp from "./middleware/majesticApp.js";
 import majesticNpm from "./middleware/majesticNpm.js";
 import generateIndexHtml from "./lib/generateIndexHtml.js";
@@ -41,14 +41,11 @@ app.use("*", async (c) => {
   );
 });
 
-const watcher = chokidar.watch("./app", {
-  ignored: /^\./, // Ignore dotfiles
-  persistent: true,
-});
-
-watcher.on("change", (file) => {
-  console.log(`${file} changed, reloading...`);
-
+ParcelWatcher.subscribe("./app", (error, events) => {
+  if (error) return console.error(error);
+  events.forEach((event) => {
+    console.log(`${event.type} ${event.path}, reloading...`);
+  });
   wss.clients.forEach((client) => {
     if (client.readyState === WebSocket.OPEN) {
       client.send("reload");
